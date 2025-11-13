@@ -393,10 +393,16 @@ Combined with frame blending in shader, even 15fps animations can remain smooth.
 1. **Memory Usage**: Animation textures occupy VRAM, requiring trade-offs
 2. **Animation Precision**: Depends on texture precision, may have slight errors
 3. **Normal Animation Limitations** (Important):
-   - **Skeletal Animation**: Doesn't calculate normal transformations at all; normals remain static
-   - **Vertex Animation**: Although normal textures are generated, most shaders don't use them (only MPB version's shadow pass uses them)
-   - ⚠️ This causes incorrect lighting calculations, especially for animations with significant deformation
-   - 💡 If correct dynamic lighting is needed, shaders must be modified to add normal transformation support
+   - **Original Shaders**:
+     - **Skeletal Animation**: Doesn't calculate normal transformations at all; normals remain static
+     - **Vertex Animation**: Although normal textures are generated, most shaders don't use them (only MPB version's shadow pass uses them)
+     - ⚠️ This causes incorrect lighting calculations, especially for animations with significant deformation
+   - **✨ New WithNormal Shaders**:
+     - ✅ `GpuSkinningAnimationWithNormal.shader` - Supports skeletal animation normal transformation
+     - ✅ `GpuVerticesAnimationWithNormal.shader` - Supports vertex animation normal textures
+     - ✅ Includes complete lighting system (Lambert diffuse + ambient)
+     - ✅ Supports URP main light and shadows
+     - 📖 See `法线支持使用说明.md` for details
 4. **Mesh Requirements**:
    - All sub-meshes must use the same main texture
    - UV1 and UV2 are used for bone data, cannot be used for other purposes
