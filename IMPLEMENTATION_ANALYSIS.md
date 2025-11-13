@@ -177,21 +177,66 @@ float4 positionOS = mul(finalMatrix, input.positionOS);
    - Support blending between current and next frame (_BlendFrameIndex and _BlendProgress)
    - Enable smooth animation transitions
 
+**Normal Handling in Skeletal Animation**:
+
+Skeletal animation shaders **do not perform normal transformations**. Theoretically, normals should also be transformed by bone matrices:
+
+```hlsl
+// Theoretical normal transformation (missing in current implementation)
+float3 normal =
+    mul((float3x3)bone0_matrix, input.normal) * boneWeights[0] +
+    mul((float3x3)bone1_matrix, input.normal) * boneWeights[1] +
+    mul((float3x3)bone2_matrix, input.normal) * boneWeights[2] +
+    mul((float3x3)bone3_matrix, input.normal) * boneWeights[3];
+output.normalWS = normalize(TransformObjectToWorldNormal(normal));
+```
+
+However, in the current implementation:
+- ❌ Normals remain static and don't transform with skeletal animation
+- ⚠️ This causes noticeable visual issues for scenes requiring proper lighting
+- 💡 For correct normals, consider using vertex animation approach
+
 #### Vertex Animation Shader (GpuVerticesAnimation.shader)
 
 ```hlsl
 // 1. Get vertex index (from UV1)
 float vertexIndex = input.vertexIndex.x;
 
-// 2. Sample animation texture
+// 2. Sample animation texture to get vertex position
 float2 uv = float2(vertexIndex / _AnimationTex_TexelSize.z, 
                    frameIndex / _AnimationTex_TexelSize.w);
 float3 position = tex2Dlod(_AnimationTex, float4(uv, 0, 0)).xyz;
-float3 normal = tex2Dlod(_AnimationNormalTex, float4(uv, 0, 0)).xyz;
 
-// 3. Directly use sampled position and normal
+// 3. Directly use sampled position
 output.positionCS = TransformObjectToHClip(float4(position, 1));
 ```
+
+**Important Note: Normal Texture Handling**
+
+Although normal animation textures (`_AnimationNormalTex`) are created during data generation, in actual shader implementations:
+
+1. **GpuVerticesAnimation.shader**: Declares `_AnimationNormalTex` but **never uses it**. Normal data is ignored during rendering, using the mesh's static normals instead.
+
+2. **MPBGpuVerticesAnimation.shader**: Normal texture is **only used in the shadow casting pass** (ShadowCaster Pass):
+   ```hlsl
+   // Only used in ShadowPassVertex
+   float3 normal = tex2Dlod(_AnimationNormalTex, vertexUV1);
+   output.positionCS = GetShadowPositionHClip(pos.xyz, normal);
+   ```
+   The main rendering pass also doesn't use animated normals.
+
+3. **Skeletal Animation Shaders**: Don't calculate or use normal transformations at all; vertex normals remain static.
+
+This means:
+- ✅ Vertex positions transform correctly with animation
+- ❌ Normal directions don't update with animation (except MPB version shadows)
+- ⚠️ May cause incorrect lighting calculations, especially for animations with significant deformation
+
+**Improvement Suggestions**:
+To fully support normal animation, the Vertex Shader needs to:
+1. Sample the normal texture to get animated normals
+2. Pass normals to the Fragment Shader
+3. Use animated normals for lighting calculations in the Fragment Shader
 
 ### 3.5 Runtime Animation Control
 
@@ -347,11 +392,16 @@ Combined with frame blending in shader, even 15fps animations can remain smooth.
 
 1. **Memory Usage**: Animation textures occupy VRAM, requiring trade-offs
 2. **Animation Precision**: Depends on texture precision, may have slight errors
-3. **Mesh Requirements**:
+3. **Normal Animation Limitations** (Important):
+   - **Skeletal Animation**: Doesn't calculate normal transformations at all; normals remain static
+   - **Vertex Animation**: Although normal textures are generated, most shaders don't use them (only MPB version's shadow pass uses them)
+   - ⚠️ This causes incorrect lighting calculations, especially for animations with significant deformation
+   - 💡 If correct dynamic lighting is needed, shaders must be modified to add normal transformation support
+4. **Mesh Requirements**:
    - All sub-meshes must use the same main texture
    - UV1 and UV2 are used for bone data, cannot be used for other purposes
-4. **No Hierarchy Preservation**: Generated Prefab is a flattened single Mesh
-5. **Bone Mapping**: Need to correctly handle bone index mapping for different SkinnedMeshRenderers
+5. **No Hierarchy Preservation**: Generated Prefab is a flattened single Mesh
+6. **Bone Mapping**: Need to correctly handle bone index mapping for different SkinnedMeshRenderers
 
 ## 6. Workflow
 
