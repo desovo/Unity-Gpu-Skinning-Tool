@@ -39,6 +39,10 @@ namespace Framework.GpuSkinning
             ModifyModelMatrix,
             // MPB -- 自动instance 使用Material Property Block传值
             MPBVerticesAnim,
+            // MPB With Normal -- 自动instance 使用Material Property Block传值 + 法线计算
+            MPBVerticesAnimWithNormal,
+            // MPB Skeleton With Normal -- 自动instance 使用Material Property Block传值 + 骨骼动画 + 法线计算
+            MPBSkeletonAnimWithNormal,
         }
         // 生成类型的配置
         public class GenerateConfig
@@ -77,6 +81,8 @@ namespace Framework.GpuSkinning
             { GenerateType.NoiseVerticesAnim, new GenerateConfig(AnimationType.Vertices, "GPUSkin/NoiseGpuVerticesAnimation", "_VertData.asset", "_NoiseVertPre.prefab", "_NoiseVertMat.mat", "_VertMesh.asset", "_VertNormalData.asset") },  // Noise Animation -- 自动instance 噪点顶点动画
             { GenerateType.ModifyModelMatrix, new GenerateConfig(AnimationType.Vertices, "GPUSkin/ModifyModelMatGpuVerticesAnimation", "_VertData.asset", "_ModifyModelMatVertPre.prefab", "_ModifyModelMatVertMat.mat", "_VertMesh.asset", "_VertNormalData.asset") },    // Modify Molde Matrix -- 自动instance 修改model矩阵信息(通过scale传入)
             { GenerateType.MPBVerticesAnim, new GenerateConfig(AnimationType.Vertices, "GPUSkin/MPBGpuVerticesAnimation", "_VertData.asset", "_MPBVertPre.prefab", "_MPBVertMat.mat", "_VertMesh.asset", "_VertNormalData.asset") },    // MPB -- 自动instance 使用Material Property Block传值
+            { GenerateType.MPBVerticesAnimWithNormal, new GenerateConfig(AnimationType.Vertices, "GPUSkin/MPBGpuVerticesAnimationWithNormal", "_VertData.asset", "_MPBVertNormalPre.prefab", "_MPBVertNormalMat.mat", "_VertMesh.asset", "_VertNormalData.asset") },    // MPB With Normal -- 自动instance 使用Material Property Block传值 + 法线计算
+            { GenerateType.MPBSkeletonAnimWithNormal, new GenerateConfig(AnimationType.Skeleton, "GPUSkin/MPBGpuSkinningAnimationWithNormal", "_Data.asset", "_MPBSkeletonNormalPre.prefab", "_MPBSkeletonNormalMat.mat", "_Mesh.asset") },    // MPB Skeleton With Normal -- 自动instance 使用Material Property Block传值 + 骨骼动画 + 法线计算
         };
 
         // 每根骨骼每帧所占像素空间(0,1:rotation, 2,3:translation)
